@@ -10,6 +10,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "customers"
+				},
+				{
+					"dataset": {
+						"referenceName": "Json1",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
 				}
 			],
 			"sinks": [],
@@ -27,6 +34,17 @@
 				"     ignoreNoFilesFound: false,",
 				"     validationMode: 'none',",
 				"     namespaces: true) ~> customers",
+				"source(output(",
+				"          id as string,",
+				"          date as string,",
+				"          value as string,",
+				"          customer_id as string,",
+				"          product_id as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> source1",
 				"customers foldDown(unroll(customers.customer),",
 				"     mapColumn(",
 				"          customers_id = customers.customer.id,",

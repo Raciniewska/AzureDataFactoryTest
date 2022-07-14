@@ -1,0 +1,9 @@
+{
+	"name": "raciniewskafactorytest",
+	"location": "uksouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "88b5d1ce-9af9-4bea-9be6-9af09f33e9a6",
+		"tenantId": "0fd78a89-8a75-47e9-959a-f183656b3cb0"
+	}
+}

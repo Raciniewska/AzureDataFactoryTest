@@ -47,6 +47,26 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/CosmosDbSqlApiCollection1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CosmosDb1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "CosmosDbSqlApiCollection",
+				"schema": {},
+				"typeProperties": {
+					"collectionName": "CustomerReport1"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CosmosDb1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Customers')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -109,26 +129,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/CosmosDbSqlApiCollection1')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "CosmosDb1",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "CosmosDbSqlApiCollection",
-				"schema": {},
-				"typeProperties": {
-					"collectionName": "CustomerReport1"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/CosmosDb1')]"
 			]
 		},
 		{
@@ -219,8 +219,14 @@
 						"source1 foldDown(unroll(customers.customer),",
 						"     mapColumn(",
 						"          cust_id = customers.customer.id,",
-						"          address = customers.customer.address,",
-						"          person = customers.customer.person",
+						"          building = customers.customer.address.building,",
+						"          city = customers.customer.address.city,",
+						"          country = customers.customer.address.country,",
+						"          postcode = customers.customer.address.postcode,",
+						"          street = customers.customer.address.street,",
+						"          age = customers.customer.person.age,",
+						"          lastname = customers.customer.person.lastname,",
+						"          name = customers.customer.person.name",
 						"     ),",
 						"     skipDuplicateMapInputs: false,",
 						"     skipDuplicateMapOutputs: false) ~> flatten1",
@@ -251,10 +257,15 @@
 						"join3 select(mapColumn(",
 						"          cust_id = numberOfOrders@cust_id,",
 						"          numberOfOrders,",
-						"          valueOfOrdersInPounds = value_in_pounds,",
-						"          AvgPurchaseValueInPounds = AvgPurchaseValue,",
-						"          address,",
-						"          person",
+						"          valueInPounds = value_in_pounds,",
+						"          AvgPurchaseValue,",
+						"          building,",
+						"          city,",
+						"          country,",
+						"          postcode,",
+						"          street,",
+						"          lastname,",
+						"          name",
 						"     ),",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> select1",

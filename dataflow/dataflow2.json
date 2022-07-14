@@ -22,7 +22,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "CosmosDbSqlApiCollection1",
+						"referenceName": "CosmosDbSqlApiCollection2",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
@@ -52,9 +52,6 @@
 				},
 				{
 					"name": "addAvgPurchaseValue"
-				},
-				{
-					"name": "join3"
 				},
 				{
 					"name": "select1"
@@ -104,33 +101,21 @@
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join1",
-				"join1 aggregate(groupBy(cust_id),",
+				"join1 aggregate(groupBy(country),",
 				"     numberOfOrders = countDistinct(id)) ~> numberOfOrders",
-				"join1 aggregate(groupBy(cust_id),",
+				"join1 aggregate(groupBy(country),",
 				"     value_in_pounds = sum(value_in_pounds)) ~> totalPurchaseValue",
-				"numberOfOrders, totalPurchaseValue join(numberOfOrders@cust_id == totalPurchaseValue@cust_id,",
+				"numberOfOrders, totalPurchaseValue join(numberOfOrders@country == totalPurchaseValue@country,",
 				"     joinType:'inner',",
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join2",
 				"join2 derive(AvgPurchaseValue = value_in_pounds / numberOfOrders) ~> addAvgPurchaseValue",
-				"addAvgPurchaseValue, flatten1 join(numberOfOrders@cust_id == flatten1@cust_id,",
-				"     joinType:'inner',",
-				"     matchType:'exact',",
-				"     ignoreSpaces: false,",
-				"     broadcast: 'auto')~> join3",
-				"join3 select(mapColumn(",
-				"          cust_id = numberOfOrders@cust_id,",
+				"addAvgPurchaseValue select(mapColumn(",
+				"          country = numberOfOrders@country,",
 				"          numberOfOrders,",
-				"          valueInPounds = value_in_pounds,",
-				"          AvgPurchaseValue,",
-				"          building,",
-				"          city,",
-				"          country,",
-				"          postcode,",
-				"          street,",
-				"          lastname,",
-				"          name",
+				"          value_in_pounds,",
+				"          AvgPurchaseValue",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select1",

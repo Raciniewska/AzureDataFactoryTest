@@ -67,6 +67,26 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/CosmosDbSqlApiCollection2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CosmosDb1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "CosmosDbSqlApiCollection",
+				"schema": {},
+				"typeProperties": {
+					"collectionName": "CountryReport"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CosmosDb1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Customers')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -288,6 +308,147 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/dataflow2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Customers",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "Orders",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "CosmosDbSqlApiCollection2",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "flatten1"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "derivedColumn2"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "numberOfOrders"
+						},
+						{
+							"name": "totalPurchaseValue"
+						},
+						{
+							"name": "join2"
+						},
+						{
+							"name": "addAvgPurchaseValue"
+						},
+						{
+							"name": "select1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          customers as (customer as (address as (building as integer, city as string, country as string, postcode as integer, street as string), id as string, person as (age as short, lastname as string, name as string))[])",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     validationMode: 'none',",
+						"     namespaces: true) ~> source1",
+						"source(output(",
+						"          id as string,",
+						"          date as string,",
+						"          value as string,",
+						"          customer_id as string,",
+						"          product_id as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     documentForm: 'documentPerLine',",
+						"     wildcardPaths:['*.json']) ~> source2",
+						"source1 foldDown(unroll(customers.customer),",
+						"     mapColumn(",
+						"          cust_id = customers.customer.id,",
+						"          building = customers.customer.address.building,",
+						"          city = customers.customer.address.city,",
+						"          country = customers.customer.address.country,",
+						"          postcode = customers.customer.address.postcode,",
+						"          street = customers.customer.address.street,",
+						"          age = customers.customer.person.age,",
+						"          lastname = customers.customer.person.lastname,",
+						"          name = customers.customer.person.name",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> flatten1",
+						"source2 derive(currency = left(value,1),",
+						"          value_decimal = toDecimal(dropLeft(value,1))) ~> derivedColumn1",
+						"derivedColumn1 derive(value_in_pounds = iif(currency == \"$\", value_decimal*0.84, ",
+						"iif(currency == \"€\", value_decimal*0.85, value_decimal))) ~> derivedColumn2",
+						"flatten1, derivedColumn2 join(cust_id == customer_id,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 aggregate(groupBy(country),",
+						"     numberOfOrders = countDistinct(id)) ~> numberOfOrders",
+						"join1 aggregate(groupBy(country),",
+						"     value_in_pounds = sum(value_in_pounds)) ~> totalPurchaseValue",
+						"numberOfOrders, totalPurchaseValue join(numberOfOrders@country == totalPurchaseValue@country,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join2",
+						"join2 derive(AvgPurchaseValue = value_in_pounds / numberOfOrders) ~> addAvgPurchaseValue",
+						"addAvgPurchaseValue select(mapColumn(",
+						"          country = numberOfOrders@country,",
+						"          numberOfOrders,",
+						"          value_in_pounds,",
+						"          AvgPurchaseValue",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'document',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Customers')]",
+				"[concat(variables('factoryId'), '/datasets/Orders')]",
+				"[concat(variables('factoryId'), '/datasets/CosmosDbSqlApiCollection2')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -333,6 +494,54 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "dataflow2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow2')]"
 			]
 		}
 	]

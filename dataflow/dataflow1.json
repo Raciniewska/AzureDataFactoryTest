@@ -19,7 +19,15 @@
 					"name": "source2"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "CosmosDbSqlApiCollection1",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "flatten1"
@@ -44,6 +52,12 @@
 				},
 				{
 					"name": "addAvgPurchaseValue"
+				},
+				{
+					"name": "join3"
+				},
+				{
+					"name": "select1"
 				}
 			],
 			"scriptLines": [
@@ -93,7 +107,31 @@
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join2",
-				"join2 derive(AvgPurchaseValue = value_in_pounds / numberOfOrders) ~> addAvgPurchaseValue"
+				"join2 derive(AvgPurchaseValue = value_in_pounds / numberOfOrders) ~> addAvgPurchaseValue",
+				"addAvgPurchaseValue, flatten1 join(numberOfOrders@cust_id == flatten1@cust_id,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join3",
+				"join3 select(mapColumn(",
+				"          cust_id = numberOfOrders@cust_id,",
+				"          numberOfOrders,",
+				"          valueOfOrdersInPounds = value_in_pounds,",
+				"          AvgPurchaseValueInPounds = AvgPurchaseValue,",
+				"          address,",
+				"          person",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'document',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}

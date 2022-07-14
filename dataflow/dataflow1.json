@@ -35,9 +35,6 @@
 				},
 				{
 					"name": "numberOfOrders"
-				},
-				{
-					"name": "valueOfOrders"
 				}
 			],
 			"scriptLines": [
@@ -79,9 +76,7 @@
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join1",
 				"join1 aggregate(groupBy(cust_id),",
-				"     id = countDistinct(id)) ~> numberOfOrders",
-				"join1 aggregate(groupBy(cust_id),",
-				"     value_in_pounds = sum(value_in_pounds)) ~> valueOfOrders"
+				"     id = countDistinct(id)) ~> numberOfOrders"
 			]
 		}
 	}

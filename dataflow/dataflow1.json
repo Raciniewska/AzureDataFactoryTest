@@ -29,7 +29,9 @@
 				"     namespaces: true) ~> customers",
 				"customers foldDown(unroll(customers.customer),",
 				"     mapColumn(",
-				"          customers",
+				"          customers_id = customers.customer.id,",
+				"          customer_name = customers.customer.person.name,",
+				"          customer_lastname = customers.customer.person.lastname",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> flatten1"

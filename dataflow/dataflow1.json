@@ -35,6 +35,15 @@
 				},
 				{
 					"name": "numberOfOrders"
+				},
+				{
+					"name": "totalPurchaseValue"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "addAvgPurchaseValue"
 				}
 			],
 			"scriptLines": [
@@ -76,7 +85,15 @@
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join1",
 				"join1 aggregate(groupBy(cust_id),",
-				"     id = countDistinct(id)) ~> numberOfOrders"
+				"     numberOfOrders = countDistinct(id)) ~> numberOfOrders",
+				"join1 aggregate(groupBy(cust_id),",
+				"     value_in_pounds = sum(value_in_pounds)) ~> totalPurchaseValue",
+				"numberOfOrders, totalPurchaseValue join(numberOfOrders@cust_id == totalPurchaseValue@cust_id,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"join2 derive(AvgPurchaseValue = value_in_pounds / numberOfOrders) ~> addAvgPurchaseValue"
 			]
 		}
 	}
